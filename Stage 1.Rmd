@@ -1,0 +1,117 @@
+---
+title: "5310 Project"
+author: "rzou3444 / 500709979"
+date: "26/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyr)
+library(ggplot2 )
+library(readr)
+library(dplyr)
+library(corrplot)
+library(GGally)
+```
+
+
+```{r read}
+# input dataset
+HTRU_2 <- read_csv("HTRU_2_UCI.csv",   col_names = FALSE)
+colnames(HTRU_2) <- c('Mean_IP','SD_IP','EK_IP','S_IP',"Mean_C","SD_C","EK_C","S_C","Class") #add column names to the dataset
+dim(HTRU_2)  # 17898 candidates & 9 attributes
+HTRU_2[1:5,] #show first 5 candidates
+```
+
+
+```{r}
+# remove missing value & change "Class" datatype
+htru <- HTRU_2 %>% drop_na  # make sure there is no missing value
+vapply(htru,anyNA,logical(1)) #check missing value
+htru <- as.data.frame(htru)
+htru$Class <- factor(htru[[9]])  # make "Class" to labels
+vapply(htru,class,character(1)) #check each column datatype
+dim(htru)
+str(htru)
+summary(htru[1:8]) #show summary of the 8 attributes
+```
+```{r}
+# correlation between attributes
+correlation <- round(cor(HTRU_2),2)
+correlation
+corrplot(correlation,method = "square",type="upper")
+#result shows the attribute EK_IP has significant correlation with Class.
+```
+
+
+```{r}
+htru.data <- htru[-9]         # store 8 attributes
+classes <- factor(htru[[9]])  # store class labels only
+
+levels(htru$Class)  # 2 levels
+summary(htru$Class) # 1639 positive candidates & 16259 negative candidates
+```
+```{r}
+# count positive and negative candidates
+ggplot(htru,aes(x=Class,fill=htru$Class)) + geom_bar() + theme_minimal()+labs(title = "Numbers of Positive and Negative Candidates")
+```
+
+
+```{r}
+#par(mfrow=c(1,2))
+#boxplot(htru[,1:7])
+boxplot(htru[,1:8],col="blue",boxwex=0.8)
+```
+
+```{r}
+# distribution of 8 attributes
+par(mfrow=c(3,3))
+hist(htru$Mean_IP)
+hist(htru$SD_IP)
+hist(htru$EK_IP)
+hist(htru$S_IP)
+hist(htru$Mean_C)
+hist(htru$SD_C)
+hist(htru$EK_C)
+hist(htru$S_C)
+```
+
+```{r}
+# matrix of plots show scotters of each feature and each class
+ggpairs(htru,aes(colour = classes,alpha=0.1),lower = list(continuous=wrap("smooth",size=0.1,alpha=0.1)),upper = list(continuous = wrap("cor", size = 2)))
+```
+
+
+```{r}
+# matrix of scatterplots
+pairs(htru.data,main="Features of HTRU_2 Data",pch=21,bg=c("blue","red")[classes])
+```
+
+ 
+ 
+```{r}
+# see outlier
+ggplot(htru,aes(x=Class,y=Mean_IP))+geom_boxplot(outlier.colour="red",outlier.shape = 1)
+
+```
+
+```{r}
+# Normalisation
+normalise <- function(x) {
+                    return ((x - min(x)) / (max(x) - min(x)))
+}
+htru[1:8] <- normalise(htru[1:8])  
+summary(htru)
+```
+
+
+```{r}
+# save to csv file
+write.csv(htru,"htru.csv",row.names=FALSE)
+```
+
+
